@@ -14,6 +14,7 @@ import com.github.damontecres.wholphin.data.model.ItemPlayback
 import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.data.model.Trailer
 import com.github.damontecres.wholphin.preferences.AppPreferences
+import com.github.damontecres.wholphin.preferences.ThemeMediaMode
 import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.ExtrasService
 import com.github.damontecres.wholphin.services.FavoriteWatchManager
@@ -24,6 +25,7 @@ import com.github.damontecres.wholphin.services.PeopleFavorites
 import com.github.damontecres.wholphin.services.SeerrService
 import com.github.damontecres.wholphin.services.StreamChoiceService
 import com.github.damontecres.wholphin.services.ThemeSongPlayer
+import com.github.damontecres.wholphin.services.ThemeVideoPlayer
 import com.github.damontecres.wholphin.services.TrailerService
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
@@ -89,6 +91,7 @@ class SeriesViewModel
         private val navigationManager: NavigationManager,
         private val itemPlaybackRepository: ItemPlaybackRepository,
         private val themeSongPlayer: ThemeSongPlayer,
+        private val themeVideoPlayer: ThemeVideoPlayer,
         private val favoriteWatchManager: FavoriteWatchManager,
         private val peopleFavorites: PeopleFavorites,
         private val trailerService: TrailerService,
@@ -137,6 +140,7 @@ class SeriesViewModel
             ) {
                 Timber.v("Start")
                 addCloseable { themeSongPlayer.stop() }
+                addCloseable { themeVideoPlayer.stop() }
                 val item = fetchItem(seriesId)
                 canDeleteSeries.update { mediaManagementService.canDelete(item) }
                 backdropService.submit(item)
@@ -274,11 +278,21 @@ class SeriesViewModel
             item.value?.let { item ->
                 viewModelScope.launchDefault { backdropService.submit(item) }
                 viewModelScope.launchIO {
-                    val playThemeSongs =
-                        userPreferencesService
-                            .getCurrent()
-                            .appPreferences.interfacePreferences.playThemeSongs
-                    themeSongPlayer.playThemeFor(seriesId, playThemeSongs)
+                    val prefs = userPreferencesService.getCurrent().appPreferences.interfacePreferences
+                    val playThemeSongs = prefs.playThemeSongs
+                    val themeMediaMode = prefs.themeMediaMode
+                    when (themeMediaMode) {
+                        ThemeMediaMode.THEME_NONE,
+                        ThemeMediaMode.UNRECOGNIZED,
+                        -> Unit
+                        ThemeMediaMode.THEME_MUSIC -> themeSongPlayer.playThemeFor(seriesId, playThemeSongs)
+                        ThemeMediaMode.THEME_VIDEO -> {
+                            val playedVideo = themeVideoPlayer.playThemeVideoFor(seriesId, playThemeSongs)
+                            if (!playedVideo) {
+                                themeSongPlayer.playThemeFor(seriesId, playThemeSongs)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -295,6 +309,7 @@ class SeriesViewModel
 
         fun release() {
             themeSongPlayer.stop()
+            themeVideoPlayer.stop()
         }
 
         private fun getSeasons(

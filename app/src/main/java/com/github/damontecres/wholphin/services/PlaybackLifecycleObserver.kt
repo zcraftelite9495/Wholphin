@@ -15,6 +15,7 @@ class PlaybackLifecycleObserver
         private val navigationManager: NavigationManager,
         private val playerFactory: PlayerFactory,
         private val themeSongPlayer: ThemeSongPlayer,
+        private val themeVideoPlayer: ThemeVideoPlayer,
     ) : DefaultLifecycleObserver {
         private var wasPlaying: Boolean? = null
 
@@ -44,9 +45,11 @@ class PlaybackLifecycleObserver
                 it.pause()
             }
             themeSongPlayer.stop()
+            themeVideoPlayer.stop()
         }
 
         override fun onStop(owner: LifecycleOwner) {
             themeSongPlayer.stop()
+            themeVideoPlayer.stop()
         }
     }

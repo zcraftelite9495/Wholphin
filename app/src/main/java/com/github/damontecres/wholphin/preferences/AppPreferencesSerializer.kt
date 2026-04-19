@@ -91,6 +91,7 @@ class AppPreferencesSerializer
                             .newBuilder()
                             .apply {
                                 playThemeSongs = AppPreference.PlayThemeMusic.defaultValue
+                                themeMediaMode = AppPreference.PlayThemeMedia.defaultValue
                                 appThemeColors = AppPreference.ThemeColors.defaultValue
                                 navDrawerSwitchOnFocus =
                                     AppPreference.NavDrawerSwitchOnFocus.defaultValue

@@ -10,6 +10,7 @@ import com.github.damontecres.wholphin.data.ItemPlaybackRepository
 import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.ItemPlayback
+import com.github.damontecres.wholphin.preferences.ThemeMediaMode
 import com.github.damontecres.wholphin.preferences.ThemeSongVolume
 import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.FavoriteWatchManager
@@ -18,6 +19,7 @@ import com.github.damontecres.wholphin.services.MediaReportService
 import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.services.StreamChoiceService
 import com.github.damontecres.wholphin.services.ThemeSongPlayer
+import com.github.damontecres.wholphin.services.ThemeVideoPlayer
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
 import com.github.damontecres.wholphin.ui.combinePair
@@ -61,6 +63,7 @@ class EpisodeViewModel
         val streamChoiceService: StreamChoiceService,
         val mediaReportService: MediaReportService,
         private val themeSongPlayer: ThemeSongPlayer,
+        private val themeVideoPlayer: ThemeVideoPlayer,
         private val favoriteWatchManager: FavoriteWatchManager,
         private val userPreferencesService: UserPreferencesService,
         private val backdropService: BackdropService,
@@ -189,17 +192,29 @@ class EpisodeViewModel
         fun maybePlayThemeSong(
             seriesId: UUID,
             playThemeSongs: ThemeSongVolume,
+            themeMediaMode: ThemeMediaMode,
         ) {
             viewModelScope.launchIO {
-                themeSongPlayer.playThemeFor(seriesId, playThemeSongs)
-                addCloseable {
-                    themeSongPlayer.stop()
+                when (themeMediaMode) {
+                    ThemeMediaMode.THEME_NONE,
+                    ThemeMediaMode.UNRECOGNIZED,
+                    -> Unit
+                    ThemeMediaMode.THEME_MUSIC -> themeSongPlayer.playThemeFor(seriesId, playThemeSongs)
+                    ThemeMediaMode.THEME_VIDEO -> {
+                        val playedVideo = themeVideoPlayer.playThemeVideoFor(seriesId, playThemeSongs)
+                        if (!playedVideo) {
+                            themeSongPlayer.playThemeFor(seriesId, playThemeSongs)
+                        }
+                    }
                 }
+                addCloseable { themeSongPlayer.stop() }
+                addCloseable { themeVideoPlayer.stop() }
             }
         }
 
         fun release() {
             themeSongPlayer.stop()
+            themeVideoPlayer.stop()
         }
 
         fun navigateTo(destination: Destination) {

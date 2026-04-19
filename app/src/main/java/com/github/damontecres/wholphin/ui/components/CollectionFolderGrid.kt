@@ -59,6 +59,7 @@ import com.github.damontecres.wholphin.data.model.GetItemsFilter
 import com.github.damontecres.wholphin.data.model.GetItemsFilterOverride
 import com.github.damontecres.wholphin.data.model.LibraryDisplayInfo
 import com.github.damontecres.wholphin.preferences.AppPreferences
+import com.github.damontecres.wholphin.preferences.ThemeMediaMode
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.FavoriteWatchManager
@@ -67,6 +68,7 @@ import com.github.damontecres.wholphin.services.MediaReportService
 import com.github.damontecres.wholphin.services.MusicService
 import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.services.ThemeSongPlayer
+import com.github.damontecres.wholphin.services.ThemeVideoPlayer
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
 import com.github.damontecres.wholphin.ui.AspectRatios
@@ -139,6 +141,7 @@ class CollectionFolderViewModel
         private val backdropService: BackdropService,
         private val navigationManager: NavigationManager,
         private val themeSongPlayer: ThemeSongPlayer,
+        private val themeVideoPlayer: ThemeVideoPlayer,
         private val userPreferencesService: UserPreferencesService,
         private val mediaManagementService: MediaManagementService,
         private val musicService: MusicService,
@@ -503,6 +506,7 @@ class CollectionFolderViewModel
 
         fun release() {
             themeSongPlayer.stop()
+            themeVideoPlayer.stop()
         }
 
         fun onResumePage() {
@@ -510,11 +514,21 @@ class CollectionFolderViewModel
                 item.value?.let {
                     Timber.v("onResumePage: %s", loading.value!!::class)
                     if (it.type == BaseItemKind.BOX_SET && loading.value !is DataLoadingState.Error) {
-                        val volume =
-                            userPreferencesService
-                                .getCurrent()
-                                .appPreferences.interfacePreferences.playThemeSongs
-                        themeSongPlayer.playThemeFor(it.id, volume)
+                        val prefs = userPreferencesService.getCurrent().appPreferences.interfacePreferences
+                        val volume = prefs.playThemeSongs
+                        val themeMediaMode = prefs.themeMediaMode
+                        when (themeMediaMode) {
+                            ThemeMediaMode.THEME_NONE,
+                            ThemeMediaMode.UNRECOGNIZED,
+                            -> Unit
+                            ThemeMediaMode.THEME_MUSIC -> themeSongPlayer.playThemeFor(it.id, volume)
+                            ThemeMediaMode.THEME_VIDEO -> {
+                                val playedVideo = themeVideoPlayer.playThemeVideoFor(it.id, volume)
+                                if (!playedVideo) {
+                                    themeSongPlayer.playThemeFor(it.id, volume)
+                                }
+                            }
+                        }
                     }
                 }
             }

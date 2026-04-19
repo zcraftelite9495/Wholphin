@@ -95,6 +95,12 @@ message HomePagePreferences{
   int32 max_days_next_up = 4;
 }
 
+enum ThemeMediaMode {
+  THEME_MUSIC = 0;
+  THEME_NONE = 1;
+  THEME_VIDEO = 2;
+}
+
 enum ThemeSongVolume {
   DISABLED = 0;
   LOWEST = 1;
@@ -178,6 +184,8 @@ message InterfacePreferences {
   ScreensaverPreferences screensaver_preference = 11;
   bool enable_media_management = 12;
   bool show_logos = 13;
+  ThemeMediaMode theme_media_mode = 14;
+
 }
 
 message AdvancedPreferences {

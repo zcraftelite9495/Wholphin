@@ -150,6 +150,7 @@ fun MovieDetails(
                 viewModel.maybePlayThemeSong(
                     destination.itemId,
                     preferences.appPreferences.interfacePreferences.playThemeSongs,
+                    preferences.appPreferences.interfacePreferences.themeMediaMode,
                 )
                 onPauseOrDispose {
                     viewModel.release()

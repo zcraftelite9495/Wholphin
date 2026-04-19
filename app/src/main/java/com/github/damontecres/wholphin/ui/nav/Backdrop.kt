@@ -2,6 +2,7 @@
 
 package com.github.damontecres.wholphin.ui.nav
 
+import android.view.LayoutInflater
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
@@ -24,6 +25,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import coil3.annotation.ExperimentalCoilApi
@@ -31,9 +33,12 @@ import coil3.compose.AsyncImage
 import coil3.compose.useExistingImageAsPlaceholder
 import coil3.request.ImageRequest
 import coil3.request.transitionFactory
+import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.preferences.BackdropStyle
 import com.github.damontecres.wholphin.services.BackdropResult
 import com.github.damontecres.wholphin.ui.CrossFadeFactory
+import androidx.media3.common.Player
+import androidx.media3.ui.PlayerView
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -51,6 +56,7 @@ fun Backdrop(
     crossfadeDuration: Duration = 800.milliseconds,
 ) {
     val backdrop by viewModel.backdropService.backdropFlow.collectAsStateWithLifecycle()
+    val themeVideoPlayer by viewModel.themeVideoPlayer.playerFlow.collectAsStateWithLifecycle()
     Backdrop(
         backdrop = backdrop,
         drawerIsOpen = drawerIsOpen,
@@ -59,6 +65,7 @@ fun Backdrop(
         enableTopScrim = enableTopScrim,
         useExistingImageAsPlaceholder = useExistingImageAsPlaceholder,
         crossfadeDuration = crossfadeDuration,
+        themeVideoPlayer = themeVideoPlayer,
     )
 }
 
@@ -74,6 +81,7 @@ fun Backdrop(
     enableTopScrim: Boolean = true,
     useExistingImageAsPlaceholder: Boolean = false,
     crossfadeDuration: Duration = 800.milliseconds,
+    themeVideoPlayer: Player? = null,
 ) {
     val baseBackgroundColor = MaterialTheme.colorScheme.background
     if (backdrop.hasColors &&
@@ -147,65 +155,78 @@ fun Backdrop(
         Box(
             modifier = modifier.fillMaxSize(),
         ) {
-            AsyncImage(
-                model =
-                    ImageRequest
-                        .Builder(LocalContext.current)
-                        .data(backdrop.imageUrl)
-                        .useExistingImageAsPlaceholder(useExistingImageAsPlaceholder)
-                        .transitionFactory(CrossFadeFactory(crossfadeDuration))
-                        .build(),
-                contentDescription = null,
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.TopEnd,
-                modifier =
-                    Modifier
-                        .align(Alignment.TopEnd)
-                        .fillMaxHeight(.7f)
-                        .fillMaxWidth(.7f)
-                        .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
-                        .drawWithContent {
-                            drawContent()
-                            if (drawerIsOpen) {
-                                drawRect(
-                                    brush = SolidColor(Color.Black),
-                                    alpha = .75f,
-                                )
-                            }
-                            // Subtle top scrim for system UI readability (clock, tabs)
-                            if (enableTopScrim) {
-                                drawRect(
-                                    brush =
-                                        Brush.verticalGradient(
-                                            colorStops =
-                                                arrayOf(
-                                                    0f to Color.Black.copy(alpha = TOP_SCRIM_ALPHA),
-                                                    TOP_SCRIM_END_FRACTION to Color.Transparent,
-                                                ),
-                                        ),
-                                    blendMode = BlendMode.Multiply,
-                                )
-                            }
+            val mediaModifier =
+                Modifier
+                    .align(Alignment.TopEnd)
+                    .fillMaxHeight(.7f)
+                    .fillMaxWidth(.7f)
+                    .graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen)
+                    .drawWithContent {
+                        drawContent()
+                        if (drawerIsOpen) {
                             drawRect(
-                                brush =
-                                    Brush.horizontalGradient(
-                                        colors = listOf(Color.Transparent, Color.Black),
-                                        startX = 0f,
-                                        endX = size.width * 0.6f,
-                                    ),
-                                blendMode = BlendMode.DstIn,
+                                brush = SolidColor(Color.Black),
+                                alpha = .75f,
                             )
+                        }
+                        if (enableTopScrim) {
                             drawRect(
                                 brush =
                                     Brush.verticalGradient(
-                                        colors = listOf(Color.Black, Color.Transparent),
-                                        startY = 0f,
-                                        endY = size.height,
+                                        colorStops =
+                                            arrayOf(
+                                                0f to Color.Black.copy(alpha = TOP_SCRIM_ALPHA),
+                                                TOP_SCRIM_END_FRACTION to Color.Transparent,
+                                            ),
                                     ),
-                                blendMode = BlendMode.DstIn,
+                                blendMode = BlendMode.Multiply,
                             )
-                        },
-            )
+                        }
+                        drawRect(
+                            brush =
+                                Brush.horizontalGradient(
+                                    colors = listOf(Color.Transparent, Color.Black),
+                                    startX = 0f,
+                                    endX = size.width * 0.6f,
+                                ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                        drawRect(
+                            brush =
+                                Brush.verticalGradient(
+                                    colors = listOf(Color.Black, Color.Transparent),
+                                    startY = 0f,
+                                    endY = size.height,
+                                ),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    }
+            if (themeVideoPlayer != null) {
+                AndroidView(
+                    factory = { ctx ->
+                        LayoutInflater.from(ctx)
+                            .inflate(R.layout.player_view_theme_video, null, false) as PlayerView
+                    },
+                    update = { view ->
+                        view.player = themeVideoPlayer
+                    },
+                    modifier = mediaModifier,
+                )
+            } else {
+                AsyncImage(
+                    model =
+                        ImageRequest
+                            .Builder(LocalContext.current)
+                            .data(backdrop.imageUrl)
+                            .useExistingImageAsPlaceholder(useExistingImageAsPlaceholder)
+                            .transitionFactory(CrossFadeFactory(crossfadeDuration))
+                            .build(),
+                    contentDescription = null,
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.TopEnd,
+                    modifier = mediaModifier,
+                )
+            }
         }
     }
 }

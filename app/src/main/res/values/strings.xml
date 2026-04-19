@@ -326,6 +326,10 @@
     <string name="nav_drawer_switch_on_focus">Switch nav drawer pages on focus</string>
     <string name="pass_out_protection">Passout Protection</string>
     <string name="play_theme_music">Play theme music</string>
+    <string name="play_theme_media">Theme media</string>
+    <string name="theme_media_music">Music</string>
+    <string name="theme_media_none">None</string>
+    <string name="theme_media_video">Video (falls back to music)</string>
     <string name="playback_overrides">Playback overrides</string>
     <string name="remember_selected_tab">Remember selected tabs</string>
     <string name="rewatch_next_up">Enable rewatching in next up</string>
@@ -571,6 +575,12 @@
         <item>@string/volume_medium</item>
         <item>@string/volume_high</item>
         <item>@string/volume_full</item>
+    </string-array>
+
+    <string-array name="theme_media_mode">
+        <item>@string/theme_media_music</item>
+        <item>@string/theme_media_none</item>
+        <item>@string/theme_media_video</item>
     </string-array>
 
     <string name="purple">Purple</string>

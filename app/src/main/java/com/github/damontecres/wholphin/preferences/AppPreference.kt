@@ -263,6 +263,19 @@ sealed interface AppPreference<Pref, T> {
                 valueToIndex = { if (it != ThemeSongVolume.UNRECOGNIZED) it.number else 0 },
             )
 
+        val PlayThemeMedia =
+            AppChoicePreference<AppPreferences, ThemeMediaMode>(
+                title = R.string.play_theme_media,
+                defaultValue = ThemeMediaMode.THEME_MUSIC,
+                getter = { it.interfacePreferences.themeMediaMode },
+                setter = { prefs, value ->
+                    prefs.updateInterfacePreferences { themeMediaMode = value }
+                },
+                displayValues = R.array.theme_media_mode,
+                indexToValue = { ThemeMediaMode.forNumber(it) },
+                valueToIndex = { if (it != ThemeMediaMode.UNRECOGNIZED) it.number else 0 },
+            )
+
         val PlaybackDebugInfo =
             AppSwitchPreference<AppPreferences>(
                 title = R.string.playback_debug_info,
@@ -1051,6 +1064,7 @@ val basicPreferences =
             preferences =
                 listOf(
                     AppPreference.SignInAuto,
+                    AppPreference.PlayThemeMedia,
                     AppPreference.PlayThemeMusic,
                     AppPreference.RememberSelectedTab,
                     AppPreference.SubtitleStyle,
